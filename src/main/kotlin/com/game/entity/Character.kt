@@ -8,12 +8,12 @@ import com.game.plugin.SizePlugin
 import java.util.*
 
 class Character(uuid: UUID, game: Game) : Entity(uuid, game) {
-    init {
-        isNPC = false
+  init {
+    isNPC = false
+    speed = 5
 
-        usePlugin(ControllerPlugin(this))
+    usePlugin(ControllerPlugin(this))
 
-        (plugins[PluginRepository.SizePlugin] as SizePlugin).setSize(15, 15)
-        (plugins[PluginRepository.ControllerPlugin] as ControllerPlugin).setSpeed(5)
-    }
+    (plugins[PluginRepository.SizePlugin] as SizePlugin).setSize(15, 15)
+  }
 }

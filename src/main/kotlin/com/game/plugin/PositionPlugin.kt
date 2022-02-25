@@ -6,56 +6,61 @@ import com.game.lib.Entity
 import com.game.lib.Plugin
 import com.game.lib.PluginRepository
 
-class PositionPlugin(override val entity: Entity): Plugin {
-    override val id: PluginRepository = PluginRepository.PositionPlugin
-    override val name: String = "PositionPlugin"
-    override var update: Update? = null
+class PositionPlugin(override val entity: Entity) : Plugin {
+  override val id: PluginRepository = PluginRepository.PositionPlugin
+  override val name: String = "PositionPlugin"
+  override var update: Update? = null
 
-    var x: Int = 0
-    var y: Int = 0
+  var x: Float = 0f
+  var y: Float = 0f
 
-    override fun update(update: Update) {
-        val data = decode<Map<String, Int>>(update.data)
-        this.setPosition(x + (data["x"] ?: 0), y + (data["y"] ?: 0))
+  override fun update(update: Update) {
+    val data = decode<Map<String, Float>>(update.data)
+    println("Update call: ${data["x"]}, ${data["y"]} new position: ${x + (data["x"] ?: 0f)}, ${y + (data["y"] ?: 0f)}")
+    this.setPosition(x + (data["x"] ?: 0f), y + (data["y"] ?: 0f))
 
-        this.update = Update(
-            plugin = id.ordinal,
-            data = encode(mapOf(
-                Pair("x", x),
-                Pair("y", y)),
-            )
+    this.update = Update(
+      plugin = id.ordinal,
+      data = encode(
+        mapOf(
+          Pair("x", x),
+          Pair("y", y)
+        ),
+      )
+    )
+  }
+
+  override fun <T> encode(data: Map<String, T>): ByteArray {
+    val xPkg = Binary.FloatToBytes(data["x"] as Float, 4)
+    val yPkg = Binary.FloatToBytes(data["y"] as Float, 4)
+
+    return xPkg.plus(yPkg)
+  }
+
+  override fun <T> decode(data: ByteArray): T {
+    return mapOf(
+      Pair("x", Binary.BytesToFloat(data.sliceArray(0..3))),
+      Pair("y", Binary.BytesToFloat(data.sliceArray(4..7)))
+    ) as T
+  }
+
+  override fun syncWith(entity: Entity) {
+    entity.client?.sendUpdate(
+      Update(
+        plugin = id.ordinal,
+        entity = this.entity.uid.toString(),
+        data = encode(
+          mapOf(
+            Pair("x", x),
+            Pair("y", y)
+          ),
         )
-    }
+      )
+    )
+  }
 
-    override fun <T> encode(data: Map<String, T>): ByteArray {
-        val xPkg = Binary.IntToBytes(data["x"] as Int, 2)
-        val yPkg = Binary.IntToBytes(data["y"] as Int, 2)
-
-        return xPkg.plus(yPkg)
-    }
-
-    override fun <T> decode(data: ByteArray): T {
-        return mapOf(
-            Pair("x", data[0].toInt()),
-            Pair("y", data[2].toInt())
-        ) as T
-    }
-
-    override fun syncWith(entity: Entity) {
-        entity.client?.sendUpdate(
-            Update(
-                plugin = id.ordinal,
-                entity = this.entity.uid.toString(),
-                data = encode(mapOf(
-                    Pair("x", x),
-                    Pair("y", y)),
-                )
-            )
-        )
-    }
-
-    fun setPosition(x: Int, y: Int) {
-        this.x = x;
-        this.y = y
-    }
+  private fun setPosition(x: Float, y: Float) {
+    this.x = x
+    this.y = y
+  }
 }
